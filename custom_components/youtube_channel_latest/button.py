@@ -71,6 +71,9 @@ class RefreshChannelButton(ButtonEntity):
 
     async def async_press(self) -> None:
         await self._coordinator.async_refresh_channel(self._channel)
+        for coord in self.hass.data.get(DOMAIN, {}).values():
+            if isinstance(coord, YouTubeLatestCoordinator):
+                await coord.async_request_refresh()
 
 
 class RefreshAllButton(ButtonEntity):

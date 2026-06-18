@@ -16,6 +16,7 @@ from .const import (
     CONF_EXCLUDE_SHORTS,
     CONF_LATEST_COUNT,
     CONF_MAX_VIDEOS,
+    DEFAULT_EXCLUDE_SHORTS,
     DEFAULT_LATEST_COUNT,
     DEFAULT_MAX_VIDEOS,
     DOMAIN,
@@ -70,7 +71,10 @@ def _setup_channel_entry(
 ) -> None:
     channels: list[str] = entry.data.get(CONF_CHANNELS, [])
     max_videos: int = entry.options.get(CONF_MAX_VIDEOS, entry.data.get(CONF_MAX_VIDEOS, DEFAULT_MAX_VIDEOS))
-    exclude_shorts: bool = entry.options.get(CONF_EXCLUDE_SHORTS, entry.data.get(CONF_EXCLUDE_SHORTS, False))
+    exclude_shorts: bool = entry.options.get(
+        CONF_EXCLUDE_SHORTS,
+        entry.data.get(CONF_EXCLUDE_SHORTS, DEFAULT_EXCLUDE_SHORTS),
+    )
 
     entities: list[SensorEntity] = []
     for channel in channels:
