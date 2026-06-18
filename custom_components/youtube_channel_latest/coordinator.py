@@ -82,6 +82,25 @@ class YouTubeCoordinator(DataUpdateCoordinator):
 
     async def _async_update_data(self) -> dict:
         channels: list[str] = self._entry.data.get(CONF_CHANNELS, [])
+
+        result: dict[str, dict] = {}
+        # SOCS cookie bypasses YouTube's GDPR consent page (common for EU channels)
+        async with aiohttp.ClientSession(cookies={"SOCS": "CAI"}) as session:
+            for channel in channels:
+                result[channel] = await self._fetch_channel_data(session, channel)
+        self.last_update_success_time = utcnow()
+        return result
+
+    async def async_refresh_channel(self, channel: str) -> None:
+        """Refresh one configured channel and notify entities."""
+        result = dict(self.data or {})
+        # SOCS cookie bypasses YouTube's GDPR consent page (common for EU channels)
+        async with aiohttp.ClientSession(cookies={"SOCS": "CAI"}) as session:
+            result[channel] = await self._fetch_channel_data(session, channel)
+        self.last_update_success_time = utcnow()
+        self.async_set_updated_data(result)
+
+    async def _fetch_channel_data(self, session: aiohttp.ClientSession, channel: str) -> dict:
         max_videos: int = self._entry.options.get(
             CONF_MAX_VIDEOS, self._entry.data.get(CONF_MAX_VIDEOS, DEFAULT_MAX_VIDEOS)
         )
@@ -89,38 +108,32 @@ class YouTubeCoordinator(DataUpdateCoordinator):
             CONF_EXCLUDE_SHORTS, self._entry.data.get(CONF_EXCLUDE_SHORTS, DEFAULT_EXCLUDE_SHORTS)
         )
 
-        result: dict[str, dict] = {}
-        # SOCS cookie bypasses YouTube's GDPR consent page (common for EU channels)
-        async with aiohttp.ClientSession(cookies={"SOCS": "CAI"}) as session:
-            for channel in channels:
-                try:
-                    channel_id, channel_name = await self._resolve_channel(session, channel)
-                    videos = await self._fetch_videos(session, channel_id, max_videos)
-                    videos = await self._classify_shorts(session, videos)
-                    result[channel] = {
-                        "channel_id": channel_id,
-                        "channel_name": channel_name,
-                        "channel_handle": channel if channel.startswith("@") else f"@{channel_name}",
-                        "channel_url": f"https://www.youtube.com/channel/{channel_id}",
-                        "rss_url": YOUTUBE_RSS_URL.format(channel_id=channel_id),
-                        "videos": [v for v in videos if not v["is_short"]],
-                        "shorts": [v for v in videos if v["is_short"]],
-                        "exclude_shorts": exclude_shorts,
-                    }
-                except Exception as err:
-                    _LOGGER.warning("Error fetching channel '%s': %s", channel, err)
-                    result[channel] = {
-                        "channel_id": None,
-                        "channel_name": channel,
-                        "channel_handle": channel if channel.startswith("@") else None,
-                        "channel_url": None,
-                        "rss_url": None,
-                        "videos": [],
-                        "shorts": [],
-                        "exclude_shorts": exclude_shorts,
-                    }
-        self.last_update_success_time = utcnow()
-        return result
+        try:
+            channel_id, channel_name = await self._resolve_channel(session, channel)
+            videos = await self._fetch_videos(session, channel_id, max_videos)
+            videos = await self._classify_shorts(session, videos)
+            return {
+                "channel_id": channel_id,
+                "channel_name": channel_name,
+                "channel_handle": channel if channel.startswith("@") else f"@{channel_name}",
+                "channel_url": f"https://www.youtube.com/channel/{channel_id}",
+                "rss_url": YOUTUBE_RSS_URL.format(channel_id=channel_id),
+                "videos": [v for v in videos if not v["is_short"]],
+                "shorts": [v for v in videos if v["is_short"]],
+                "exclude_shorts": exclude_shorts,
+            }
+        except Exception as err:
+            _LOGGER.warning("Error fetching channel '%s': %s", channel, err)
+            return {
+                "channel_id": None,
+                "channel_name": channel,
+                "channel_handle": channel if channel.startswith("@") else None,
+                "channel_url": None,
+                "rss_url": None,
+                "videos": [],
+                "shorts": [],
+                "exclude_shorts": exclude_shorts,
+            }
 
     async def _resolve_channel(self, session: aiohttp.ClientSession, channel: str) -> tuple[str, str]:
         channel = channel.strip()
@@ -253,6 +266,8 @@ class YouTubeLatestCoordinator(DataUpdateCoordinator):
             for channel_data in coordinator.data.values():
                 for video in channel_data.get("videos", []):
                     all_videos.append({**video, "channel_name": channel_data.get("channel_name", "")})
+                if channel_data.get("exclude_shorts"):
+                    continue
                 for short in channel_data.get("shorts", []):
                     all_videos.append({**short, "channel_name": channel_data.get("channel_name", "")})
 

@@ -17,7 +17,7 @@ CONF_LATEST_COUNT = "latest_count"
 
 DEFAULT_MAX_VIDEOS = 10
 DEFAULT_LATEST_COUNT = 10
-DEFAULT_EXCLUDE_SHORTS = False
+DEFAULT_EXCLUDE_SHORTS = True
 DEFAULT_SCAN_INTERVAL = 3600  # seconds
 
 YOUTUBE_RSS_URL = "https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"

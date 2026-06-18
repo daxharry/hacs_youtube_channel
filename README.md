@@ -20,7 +20,8 @@ HACS installs this integration directly from the repository default branch. The 
 - **4 info sensors per channel** -- channel URL, handle, channel ID, RSS URL
 - **Cross-channel Latest feed** -- auto-created, aggregates all channels sorted by date
 - Last refresh timestamp and status sensor per channel
-- Option to exclude Shorts
+- Exclude Shorts is enabled by default and can be changed in options
+- Refresh button per channel, plus a refresh-all button for the Latest feed
 - No API key required -- uses YouTube RSS feeds
 - Uses the bundled YouTube icon in HACS and the Home Assistant integration page
 - Uses the YouTube Material Design icon for video, Short, Latest feed, and refresh-all entities
@@ -42,6 +43,7 @@ When you add a channel entry (e.g. `@MrBeast`), the following sensors are create
 | … up to `video_N` | … |
 | `sensor.youtube_mrbeast_short_01` | Latest Short |
 | … up to `short_N` | … |
+| `button.youtube_mrbeast_refresh` | Refresh only this channel |
 
 Each video/short sensor:
 - **State** = video title
@@ -93,6 +95,8 @@ This custom repository is installed directly from the default branch. It does no
 5. Repeat to add more channels.
 
 Options can be updated at any time via the integration's **Configure** button.
+
+**Exclude Shorts** is checked by default for new channel entries. When it is enabled, Shorts are not created as channel entities and are also left out of the cross-channel **YouTube Latest** feed.
 
 ## Channel input formats
 
