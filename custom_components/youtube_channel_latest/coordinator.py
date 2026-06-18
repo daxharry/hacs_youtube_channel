@@ -1,7 +1,5 @@
 """DataUpdateCoordinators for YouTube Channel Latest."""
 from __future__ import annotations
-
-import asyncio
 import logging
 import re
 import xml.etree.ElementTree as ET
@@ -106,8 +104,8 @@ class YouTubeCoordinator(DataUpdateCoordinator):
 
         try:
             channel_id, channel_name = await self._resolve_channel(session, channel)
-            videos = await self._fetch_videos(session, channel_id, max_videos)
-            videos = await self._filter_regular_videos(session, videos)
+            videos = await self._fetch_videos(session, channel_id)
+            videos = await self._filter_regular_videos(session, videos, max_videos)
             return {
                 "channel_id": channel_id,
                 "channel_name": channel_name,
@@ -176,7 +174,7 @@ class YouTubeCoordinator(DataUpdateCoordinator):
         title_el = root.find("atom:title", NS)
         return title_el.text if title_el is not None else None
 
-    async def _fetch_videos(self, session: aiohttp.ClientSession, channel_id: str, max_videos: int) -> list[dict]:
+    async def _fetch_videos(self, session: aiohttp.ClientSession, channel_id: str) -> list[dict]:
         url = YOUTUBE_RSS_URL.format(channel_id=channel_id)
         async with session.get(url, headers=_RSS_HEADERS) as resp:
             if resp.status != 200:
@@ -185,7 +183,7 @@ class YouTubeCoordinator(DataUpdateCoordinator):
 
         root = ET.fromstring(xml_text)
         videos: list[dict] = []
-        for entry in root.findall("atom:entry", NS)[:max_videos]:
+        for entry in root.findall("atom:entry", NS):
             video_id_el = entry.find("yt:videoId", NS)
             title_el = entry.find("atom:title", NS)
             published_el = entry.find("atom:published", NS)
@@ -211,20 +209,31 @@ class YouTubeCoordinator(DataUpdateCoordinator):
             })
         return videos
 
-    async def _filter_regular_videos(self, session: aiohttp.ClientSession, videos: list[dict]) -> list[dict]:
-        async def is_regular_video(video: dict) -> bool:
+    async def _filter_regular_videos(
+        self,
+        session: aiohttp.ClientSession,
+        videos: list[dict],
+        max_videos: int,
+    ) -> list[dict]:
+        regular_videos: list[dict] = []
+
+        for video in videos:
             url = _YOUTUBE_SHORTS_URL.format(video_id=video["video_id"])
             try:
                 async with session.head(
                     url, allow_redirects=False, headers=_HEADERS,
                     timeout=aiohttp.ClientTimeout(total=5),
                 ) as resp:
-                    return resp.status != 200
+                    is_regular = resp.status != 200
             except Exception:
-                return True
+                is_regular = True
 
-        checks = await asyncio.gather(*[is_regular_video(v) for v in videos])
-        return [video for video, is_regular in zip(videos, checks) if is_regular]
+            if is_regular:
+                regular_videos.append(video)
+                if len(regular_videos) >= max_videos:
+                    break
+
+        return regular_videos
 
 
 # ---------------------------------------------------------------------------

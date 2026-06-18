@@ -10,10 +10,10 @@
       },
       "channel": {
         "title": "Add YouTube Channel",
-        "description": "Enter the YouTube channels to monitor. Use the channel ID (e.g. `UCxxxxxx`) or the handle (e.g. `@MrBeast`). Separate multiple channels with a comma or a new line.",
+        "description": "Enter the YouTube channels to monitor. Only regular videos are tracked — Shorts are skipped automatically. Use the channel ID (e.g. `UCxxxxxx`) or the handle (e.g. `@MrBeast`). Separate multiple channels with a comma or a new line.",
         "data": {
           "channels": "Channels (IDs or @handles)",
-          "max_videos": "Number of latest videos to fetch (1-50)"
+          "max_videos": "Number of latest regular videos to fetch (1-50)"
         }
       },
       "latest": {
@@ -34,7 +34,7 @@
         "title": "Options",
         "data": {
           "channels": "Channels (IDs or @handles)",
-          "max_videos": "Number of latest videos to fetch (1-50)",
+          "max_videos": "Number of latest regular videos to fetch (1-50)",
           "latest_count": "Number of videos to show (1-50)"
         }
       }
