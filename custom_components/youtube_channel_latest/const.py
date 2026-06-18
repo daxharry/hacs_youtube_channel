@@ -19,4 +19,19 @@ DEFAULT_LATEST_COUNT = 10
 DEFAULT_SCAN_INTERVAL = 3600  # seconds
 
 YOUTUBE_RSS_URL = "https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
+YOUTUBE_RSS_PLAYLIST_URL = "https://www.youtube.com/feeds/videos.xml?playlist_id={playlist_id}"
 YOUTUBE_CHANNEL_SEARCH = "https://www.youtube.com/@{handle}"
+
+
+def channel_videos_only_playlist_id(channel_id: str) -> str:
+    """Return the UULF playlist ID whose RSS feed excludes Shorts."""
+    if not channel_id.startswith("UC") or len(channel_id) != 24:
+        raise ValueError(f"Invalid YouTube channel ID: {channel_id}")
+    return f"UULF{channel_id[2:]}"
+
+
+def channel_videos_only_rss_url(channel_id: str) -> str:
+    """RSS feed URL for regular uploads only (no Shorts)."""
+    return YOUTUBE_RSS_PLAYLIST_URL.format(
+        playlist_id=channel_videos_only_playlist_id(channel_id)
+    )

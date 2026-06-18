@@ -15,13 +15,15 @@ from homeassistant.util.dt import utcnow
 from .const import (
     CONF_CHANNELS,
     CONF_ENTRY_TYPE,
+    CONF_LATEST_COUNT,
     CONF_MAX_VIDEOS,
+    DEFAULT_LATEST_COUNT,
     DEFAULT_MAX_VIDEOS,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     ENTRY_TYPE_CHANNEL,
     YOUTUBE_CHANNEL_SEARCH,
-    YOUTUBE_RSS_URL,
+    channel_videos_only_rss_url,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -57,7 +59,25 @@ _RSS_HEADERS = {
     "Accept-Language": "en-US,en;q=0.9",
 }
 
-_YOUTUBE_SHORTS_URL = "https://www.youtube.com/shorts/{video_id}"
+def _is_short_video(video: dict) -> bool:
+    """Detect Shorts from RSS entry link metadata."""
+    url = video.get("url") or ""
+    if "/shorts/" in url:
+        return True
+    video_id = video.get("video_id") or ""
+    return bool(video_id and url.rstrip("/").endswith(f"/shorts/{video_id}"))
+
+
+def _filter_non_short_videos(videos: list[dict], max_videos: int | None = None) -> list[dict]:
+    """Keep regular videos only, optionally capped to max_videos."""
+    regular: list[dict] = []
+    for video in videos:
+        if _is_short_video(video):
+            continue
+        regular.append(video)
+        if max_videos is not None and len(regular) >= max_videos:
+            break
+    return regular
 
 
 # ---------------------------------------------------------------------------
@@ -105,13 +125,13 @@ class YouTubeCoordinator(DataUpdateCoordinator):
         try:
             channel_id, channel_name = await self._resolve_channel(session, channel)
             videos = await self._fetch_videos(session, channel_id)
-            videos = await self._filter_regular_videos(session, videos, max_videos)
+            videos = _filter_non_short_videos(videos, max_videos)
             return {
                 "channel_id": channel_id,
                 "channel_name": channel_name,
                 "channel_handle": channel if channel.startswith("@") else f"@{channel_name}",
                 "channel_url": f"https://www.youtube.com/channel/{channel_id}",
-                "rss_url": YOUTUBE_RSS_URL.format(channel_id=channel_id),
+                "rss_url": channel_videos_only_rss_url(channel_id),
                 "videos": videos,
             }
         except Exception as err:
@@ -165,7 +185,7 @@ class YouTubeCoordinator(DataUpdateCoordinator):
         return channel_id, channel_name
 
     async def _fetch_channel_name(self, session: aiohttp.ClientSession, channel_id: str) -> str | None:
-        url = YOUTUBE_RSS_URL.format(channel_id=channel_id)
+        url = channel_videos_only_rss_url(channel_id)
         async with session.get(url, headers=_RSS_HEADERS) as resp:
             if resp.status != 200:
                 return None
@@ -175,7 +195,7 @@ class YouTubeCoordinator(DataUpdateCoordinator):
         return title_el.text if title_el is not None else None
 
     async def _fetch_videos(self, session: aiohttp.ClientSession, channel_id: str) -> list[dict]:
-        url = YOUTUBE_RSS_URL.format(channel_id=channel_id)
+        url = channel_videos_only_rss_url(channel_id)
         async with session.get(url, headers=_RSS_HEADERS) as resp:
             if resp.status != 200:
                 raise UpdateFailed(f"RSS fetch failed ({resp.status})")
@@ -198,42 +218,20 @@ class YouTubeCoordinator(DataUpdateCoordinator):
                 description = desc_el.text if desc_el is not None else ""
                 thumbnail = thumb_el.get("url", "") if thumb_el is not None else ""
 
-            videos.append({
-                "video_id": video_id_el.text if video_id_el is not None else "",
+            video_id = video_id_el.text if video_id_el is not None else ""
+            link_url = link_el.get("href", "") if link_el is not None else ""
+            video = {
+                "video_id": video_id,
                 "title": title_el.text if title_el is not None else "",
                 "description": description,
                 "thumbnail": thumbnail,
-                "url": link_el.get("href", "") if link_el is not None else "",
+                "url": link_url,
                 "published": published_el.text if published_el is not None else "",
                 "updated": updated_el.text if updated_el is not None else "",
-            })
+            }
+            if not _is_short_video(video):
+                videos.append(video)
         return videos
-
-    async def _filter_regular_videos(
-        self,
-        session: aiohttp.ClientSession,
-        videos: list[dict],
-        max_videos: int,
-    ) -> list[dict]:
-        regular_videos: list[dict] = []
-
-        for video in videos:
-            url = _YOUTUBE_SHORTS_URL.format(video_id=video["video_id"])
-            try:
-                async with session.head(
-                    url, allow_redirects=False, headers=_HEADERS,
-                    timeout=aiohttp.ClientTimeout(total=5),
-                ) as resp:
-                    is_regular = resp.status != 200
-            except Exception:
-                is_regular = True
-
-            if is_regular:
-                regular_videos.append(video)
-                if len(regular_videos) >= max_videos:
-                    break
-
-        return regular_videos
 
 
 # ---------------------------------------------------------------------------
@@ -267,6 +265,11 @@ class YouTubeLatestCoordinator(DataUpdateCoordinator):
                 for video in channel_data.get("videos", []):
                     all_videos.append({**video, "channel_name": channel_data.get("channel_name", "")})
 
+        all_videos = _filter_non_short_videos(all_videos)
         all_videos.sort(key=lambda v: v.get("published", ""), reverse=True)
+
+        latest_count: int = self._entry.options.get(
+            CONF_LATEST_COUNT, self._entry.data.get(CONF_LATEST_COUNT, DEFAULT_LATEST_COUNT)
+        )
         self.last_update_success_time = utcnow()
-        return {"videos": all_videos}
+        return {"videos": all_videos[:latest_count]}

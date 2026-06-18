@@ -1,7 +1,7 @@
 {
   "domain": "youtube_channel_latest",
   "name": "YouTube Channel Latest",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "documentation": "https://github.com/daxharry/youtube_channel_latest",
   "issue_tracker": "https://github.com/daxharry/youtube_channel_latest/issues",
   "requirements": [],
