@@ -1,0 +1,12 @@
+{
+  "domain": "youtube_channel_latest",
+  "name": "YouTube Channel Latest",
+  "version": "1.0.0",
+  "documentation": "https://github.com/daxharry/youtube_channel_latest",
+  "issue_tracker": "https://github.com/daxharry/youtube_channel_latest/issues",
+  "requirements": [],
+  "dependencies": [],
+  "codeowners": ["@daxharry"],
+  "config_flow": true,
+  "iot_class": "cloud_polling"
+}

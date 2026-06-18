@@ -1,0 +1,48 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "YouTube Channel Latest",
+        "menu_options": {
+          "channel": "Add a YouTube channel",
+          "latest": "Add a Latest feed (cross-channel)"
+        }
+      },
+      "channel": {
+        "title": "Add YouTube Channel",
+        "description": "Enter the YouTube channels to monitor. Use the channel ID (e.g. `UCxxxxxx`) or the handle (e.g. `@MrBeast`). Separate multiple channels with a comma or a new line.",
+        "data": {
+          "channels": "Channels (IDs or @handles)",
+          "max_videos": "Number of latest videos to fetch (1-50)",
+          "exclude_shorts": "Exclude Shorts"
+        }
+      },
+      "latest": {
+        "title": "Add Latest Feed",
+        "description": "Creates a cross-channel feed with the most recent videos from all your configured channels, sorted by date.",
+        "data": {
+          "latest_count": "Number of videos to show (1-50)"
+        }
+      }
+    },
+    "error": {
+      "no_channels": "Please enter at least one channel."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options",
+        "data": {
+          "channels": "Channels (IDs or @handles)",
+          "max_videos": "Number of latest videos to fetch (1-50)",
+          "exclude_shorts": "Exclude Shorts",
+          "latest_count": "Number of videos to show (1-50)"
+        }
+      }
+    },
+    "error": {
+      "no_channels": "Please enter at least one channel."
+    }
+  }
+}
