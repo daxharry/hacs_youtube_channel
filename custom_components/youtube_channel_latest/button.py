@@ -4,9 +4,10 @@ from __future__ import annotations
 from homeassistant.components.button import ButtonEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.device_registry import DeviceEntryType
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import CONF_ENTRY_TYPE, DOMAIN, ENTRY_TYPE_LATEST
+from .const import CONF_ENTRY_TYPE, DOMAIN, ENTRY_TYPE_LATEST, ICON
 from .coordinator import YouTubeCoordinator, YouTubeLatestCoordinator
 
 
@@ -24,11 +25,21 @@ class RefreshAllButton(ButtonEntity):
 
     _attr_unique_id = "youtube_latest_refresh_all"
     _attr_name = "YouTube Latest Refresh All Channels"
-    _attr_icon = "mdi:refresh"
+    _attr_icon = ICON
 
     def __init__(self, coordinator: YouTubeLatestCoordinator) -> None:
         super().__init__()
         self._coordinator = coordinator
+
+    @property
+    def device_info(self) -> dict:
+        return {
+            "identifiers": {(DOMAIN, "latest")},
+            "name": "YouTube Latest",
+            "manufacturer": "YouTube",
+            "model": "Aggregated latest feed",
+            "entry_type": DeviceEntryType.SERVICE,
+        }
 
     async def async_press(self) -> None:
         for coord in self.hass.data.get(DOMAIN, {}).values():

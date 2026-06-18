@@ -2,6 +2,8 @@
 
 DOMAIN = "youtube_channel_latest"
 PLATFORMS = ["sensor", "button"]
+NAME = "YouTube Channel Latest"
+ICON = "mdi:youtube"
 
 # Entry types
 ENTRY_TYPE_CHANNEL = "channel"

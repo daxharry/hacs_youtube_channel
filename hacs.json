@@ -2,5 +2,7 @@
   "name": "YouTube Channel Latest",
   "content_in_root": false,
   "render_readme": true,
+  "domains": ["youtube_channel_latest"],
+  "zip_release": false,
   "homeassistant": "2023.1.0"
 }

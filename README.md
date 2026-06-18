@@ -2,18 +2,28 @@
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
 
-A Home Assistant integration that tracks the latest videos from one or more YouTube channels using their public RSS feeds — **no API key required**.
+A Home Assistant integration that tracks the latest videos from one or more YouTube channels using their public RSS feeds -- **no API key required**.
+
+## Purpose
+
+YouTube Channel Latest is built for Home Assistant dashboards and automations that need a lightweight view of recent channel activity without using the YouTube Data API. It polls the public RSS feed for each configured channel, exposes the newest videos as normal Home Assistant sensor entities, and creates a combined **YouTube Latest** feed across all configured channels.
+
+This integration does not download videos, stream media, manage subscriptions, or require a Google account. It only reads public metadata from YouTube RSS/HTML pages: title, link, thumbnail, description, publication date, update date, and video ID.
+
+HACS installs this integration directly from the repository default branch. The project is intentionally configured without GitHub release assets; the maintainer handles any GitHub remote actions manually.
 
 ## Features
 
 - Monitor multiple YouTube channels simultaneously
 - Add channels by **handle** (`@MrBeast`) or **channel ID** (`UCxxxxxx`)
-- **Individual sensor per video slot** — each video and each Short is its own HA entity
-- **4 info sensors per channel** — channel URL, handle, channel ID, RSS URL
-- **Cross-channel Latest feed** — auto-created, aggregates all channels sorted by date
+- **Individual sensor per video slot** -- each video and each Short is its own HA entity
+- **4 info sensors per channel** -- channel URL, handle, channel ID, RSS URL
+- **Cross-channel Latest feed** -- auto-created, aggregates all channels sorted by date
 - Last refresh timestamp and status sensor per channel
 - Option to exclude Shorts
-- No API key required — uses YouTube RSS feeds
+- No API key required -- uses YouTube RSS feeds
+- Uses the bundled YouTube icon in HACS and the Home Assistant integration page
+- Uses the YouTube Material Design icon for video, Short, Latest feed, and refresh-all entities
 
 ## Sensors created per channel
 
@@ -53,6 +63,17 @@ Each Latest video sensor:
 - **State** = `@ChannelName : Video title`
 - **Attributes**: `channel_name`, `url`, `thumbnail`, `description`, `published`, `updated`, `video_id`, `is_short`
 
+## Icons
+
+The repository includes the same YouTube artwork in both places needed by the ecosystem:
+
+| File | Used by |
+|---|---|
+| `icon.png` / `logo.png` | HACS repository listing |
+| `custom_components/youtube_channel_latest/icon.png` / `custom_components/youtube_channel_latest/logo.png` | Home Assistant custom integration page |
+
+The integration entities also set their icon to `mdi:youtube` through the shared `ICON` constant in `const.py`.
+
 ## Installation via HACS
 
 1. Open **HACS** in Home Assistant.
@@ -60,6 +81,8 @@ Each Latest video sensor:
 3. Add `https://github.com/daxharry/youtube_channel_latest` as an **Integration**.
 4. Search for **YouTube Channel Latest** and install it.
 5. Restart Home Assistant.
+
+This custom repository is installed directly from the default branch. It does not require GitHub releases or release assets.
 
 ## Configuration
 
