@@ -6,9 +6,9 @@ A Home Assistant integration that tracks the latest videos from one or more YouT
 
 ## Purpose
 
-YouTube Channel Latest is built for Home Assistant dashboards and automations that need a lightweight view of recent channel activity without using the YouTube Data API. It polls the public RSS feed for each configured channel, exposes the newest videos as normal Home Assistant sensor entities, and creates a combined **YouTube Latest** feed across all configured channels.
+YouTube Channel Latest is built for Home Assistant dashboards and automations that need a lightweight view of recent channel activity without using the YouTube Data API. It polls the public RSS feed for each configured channel, exposes the newest regular videos as normal Home Assistant sensor entities, and creates a combined **YouTube Latest** feed across all configured channels.
 
-This integration does not download videos, stream media, manage subscriptions, or require a Google account. It only reads public metadata from YouTube RSS/HTML pages: title, link, thumbnail, description, publication date, update date, and video ID.
+This integration does not download videos, stream media, manage subscriptions, expose Shorts, or require a Google account. It only reads public metadata from YouTube RSS/HTML pages: title, link, thumbnail, description, publication date, update date, and video ID.
 
 HACS installs this integration directly from the repository default branch. The project is intentionally configured without GitHub release assets; the maintainer handles any GitHub remote actions manually.
 
@@ -16,15 +16,14 @@ HACS installs this integration directly from the repository default branch. The 
 
 - Monitor multiple YouTube channels simultaneously
 - Add channels by **handle** (`@MrBeast`) or **channel ID** (`UCxxxxxx`)
-- **Individual sensor per video slot** -- each video and each Short is its own HA entity
+- **Individual sensor per video slot** -- each regular video is its own HA entity
 - **4 info sensors per channel** -- channel URL, handle, channel ID, RSS URL
-- **Cross-channel Latest feed** -- auto-created, aggregates all channels sorted by date
+- **Cross-channel Latest feed** -- auto-created, aggregates regular video sensors from all channels sorted by date
 - Last refresh timestamp and status sensor per channel
-- Exclude Shorts is enabled by default and can be changed in options
 - Refresh button per channel, plus a refresh-all button for the Latest feed
 - No API key required -- uses YouTube RSS feeds
 - Uses the bundled YouTube icon in HACS and the Home Assistant integration page
-- Uses the YouTube Material Design icon for video, Short, Latest feed, and refresh-all entities
+- Uses the YouTube Material Design icon for video, Latest feed, and refresh entities
 
 ## Sensors created per channel
 
@@ -33,7 +32,7 @@ When you add a channel entry (e.g. `@MrBeast`), the following sensors are create
 | Entity | Description |
 |---|---|
 | `sensor.youtube_mrbeast_last_refresh` | Timestamp of last successful fetch |
-| `sensor.youtube_mrbeast_status` | `ok` or `error`, with video/short counts as attributes |
+| `sensor.youtube_mrbeast_status` | `ok` or `error`, with video count as an attribute |
 | `sensor.youtube_mrbeast_channel_url` | Link to the channel (`https://www.youtube.com/channel/UCxxx`) |
 | `sensor.youtube_mrbeast_channel_handle` | Handle of the channel (e.g. `@MrBeast`) |
 | `sensor.youtube_mrbeast_channel_id` | YouTube channel ID (e.g. `UCX6OQ3DkcsbYNE6lgYDiY5Q`) |
@@ -41,17 +40,15 @@ When you add a channel entry (e.g. `@MrBeast`), the following sensors are create
 | `sensor.youtube_mrbeast_video_01` | Latest regular video |
 | `sensor.youtube_mrbeast_video_02` | 2nd latest regular video |
 | … up to `video_N` | … |
-| `sensor.youtube_mrbeast_short_01` | Latest Short |
-| … up to `short_N` | … |
 | `button.youtube_mrbeast_refresh` | Refresh only this channel |
 
-Each video/short sensor:
+Each video sensor:
 - **State** = video title
 - **Attributes**: `url`, `thumbnail`, `description`, `published`, `updated`, `video_id`
 
 ## YouTube Latest feed
 
-A **YouTube Latest** entry is created **automatically** the first time you add a channel. It aggregates all videos across all configured channels, sorted by publication date.
+A **YouTube Latest** entry is created **automatically** the first time you add a channel. It aggregates only regular videos from the configured channel `video_*` sensors, sorted by publication date.
 
 | Entity | Description |
 |---|---|
@@ -63,7 +60,7 @@ A **YouTube Latest** entry is created **automatically** the first time you add a
 
 Each Latest video sensor:
 - **State** = `@ChannelName : Video title`
-- **Attributes**: `channel_name`, `url`, `thumbnail`, `description`, `published`, `updated`, `video_id`, `is_short`
+- **Attributes**: `channel_name`, `url`, `thumbnail`, `description`, `published`, `updated`, `video_id`
 
 ## Icons
 
@@ -90,13 +87,13 @@ This custom repository is installed directly from the default branch. It does no
 
 1. Go to **Settings** → **Devices & Services** → **Add Integration**.
 2. Search for **YouTube Channel Latest**.
-3. Enter one or more channel handles/IDs (comma or newline separated), set the max number of videos and whether to exclude Shorts.
+3. Enter one or more channel handles/IDs (comma or newline separated) and set the max number of videos.
 4. A **YouTube Latest** entry is created automatically — no extra step needed.
 5. Repeat to add more channels.
 
 Options can be updated at any time via the integration's **Configure** button.
 
-**Exclude Shorts** is checked by default for new channel entries. When it is enabled, Shorts are not created as channel entities and are also left out of the cross-channel **YouTube Latest** feed.
+Shorts are not exposed by this integration. Channel sensors and the cross-channel **YouTube Latest** feed use regular videos only.
 
 ## Channel input formats
 

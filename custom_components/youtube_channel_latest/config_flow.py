@@ -12,10 +12,8 @@ from homeassistant.data_entry_flow import FlowResult
 from .const import (
     CONF_CHANNELS,
     CONF_ENTRY_TYPE,
-    CONF_EXCLUDE_SHORTS,
     CONF_LATEST_COUNT,
     CONF_MAX_VIDEOS,
-    DEFAULT_EXCLUDE_SHORTS,
     DEFAULT_LATEST_COUNT,
     DEFAULT_MAX_VIDEOS,
     DOMAIN,
@@ -77,7 +75,6 @@ class YouTubeChannelLatestConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         CONF_ENTRY_TYPE: ENTRY_TYPE_CHANNEL,
                         CONF_CHANNELS: channels,
                         CONF_MAX_VIDEOS: user_input[CONF_MAX_VIDEOS],
-                        CONF_EXCLUDE_SHORTS: user_input[CONF_EXCLUDE_SHORTS],
                     },
                 )
 
@@ -89,7 +86,6 @@ class YouTubeChannelLatestConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     vol.Optional(CONF_MAX_VIDEOS, default=DEFAULT_MAX_VIDEOS): vol.All(
                         vol.Coerce(int), vol.Range(min=1, max=50)
                     ),
-                    vol.Optional(CONF_EXCLUDE_SHORTS, default=DEFAULT_EXCLUDE_SHORTS): bool,
                 }
             ),
             errors=errors,
@@ -156,7 +152,6 @@ class YouTubeChannelOptionsFlow(config_entries.OptionsFlow):
         errors: dict[str, str] = {}
         current_channels = self._entry.data.get(CONF_CHANNELS, [])
         current_max = self._entry.options.get(CONF_MAX_VIDEOS, self._entry.data.get(CONF_MAX_VIDEOS, DEFAULT_MAX_VIDEOS))
-        current_exclude = self._entry.options.get(CONF_EXCLUDE_SHORTS, self._entry.data.get(CONF_EXCLUDE_SHORTS, DEFAULT_EXCLUDE_SHORTS))
 
         if user_input is not None:
             channels = _parse_channels(user_input[CONF_CHANNELS])
@@ -172,7 +167,6 @@ class YouTubeChannelOptionsFlow(config_entries.OptionsFlow):
                     title="",
                     data={
                         CONF_MAX_VIDEOS: user_input[CONF_MAX_VIDEOS],
-                        CONF_EXCLUDE_SHORTS: user_input[CONF_EXCLUDE_SHORTS],
                     },
                 )
 
@@ -184,7 +178,6 @@ class YouTubeChannelOptionsFlow(config_entries.OptionsFlow):
                     vol.Optional(CONF_MAX_VIDEOS, default=current_max): vol.All(
                         vol.Coerce(int), vol.Range(min=1, max=50)
                     ),
-                    vol.Optional(CONF_EXCLUDE_SHORTS, default=current_exclude): bool,
                 }
             ),
             errors=errors,

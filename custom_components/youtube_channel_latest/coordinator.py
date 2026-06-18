@@ -17,16 +17,13 @@ from homeassistant.util.dt import utcnow
 from .const import (
     CONF_CHANNELS,
     CONF_ENTRY_TYPE,
-    CONF_EXCLUDE_SHORTS,
     CONF_MAX_VIDEOS,
-    DEFAULT_EXCLUDE_SHORTS,
     DEFAULT_MAX_VIDEOS,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
     ENTRY_TYPE_CHANNEL,
     YOUTUBE_CHANNEL_SEARCH,
     YOUTUBE_RSS_URL,
-    YOUTUBE_SHORTS_URL,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -61,6 +58,8 @@ _RSS_HEADERS = {
     "Accept": "application/rss+xml, application/xml, text/xml",
     "Accept-Language": "en-US,en;q=0.9",
 }
+
+_YOUTUBE_SHORTS_URL = "https://www.youtube.com/shorts/{video_id}"
 
 
 # ---------------------------------------------------------------------------
@@ -104,23 +103,18 @@ class YouTubeCoordinator(DataUpdateCoordinator):
         max_videos: int = self._entry.options.get(
             CONF_MAX_VIDEOS, self._entry.data.get(CONF_MAX_VIDEOS, DEFAULT_MAX_VIDEOS)
         )
-        exclude_shorts: bool = self._entry.options.get(
-            CONF_EXCLUDE_SHORTS, self._entry.data.get(CONF_EXCLUDE_SHORTS, DEFAULT_EXCLUDE_SHORTS)
-        )
 
         try:
             channel_id, channel_name = await self._resolve_channel(session, channel)
             videos = await self._fetch_videos(session, channel_id, max_videos)
-            videos = await self._classify_shorts(session, videos)
+            videos = await self._filter_regular_videos(session, videos)
             return {
                 "channel_id": channel_id,
                 "channel_name": channel_name,
                 "channel_handle": channel if channel.startswith("@") else f"@{channel_name}",
                 "channel_url": f"https://www.youtube.com/channel/{channel_id}",
                 "rss_url": YOUTUBE_RSS_URL.format(channel_id=channel_id),
-                "videos": [v for v in videos if not v["is_short"]],
-                "shorts": [v for v in videos if v["is_short"]],
-                "exclude_shorts": exclude_shorts,
+                "videos": videos,
             }
         except Exception as err:
             _LOGGER.warning("Error fetching channel '%s': %s", channel, err)
@@ -131,8 +125,6 @@ class YouTubeCoordinator(DataUpdateCoordinator):
                 "channel_url": None,
                 "rss_url": None,
                 "videos": [],
-                "shorts": [],
-                "exclude_shorts": exclude_shorts,
             }
 
     async def _resolve_channel(self, session: aiohttp.ClientSession, channel: str) -> tuple[str, str]:
@@ -216,24 +208,23 @@ class YouTubeCoordinator(DataUpdateCoordinator):
                 "url": link_el.get("href", "") if link_el is not None else "",
                 "published": published_el.text if published_el is not None else "",
                 "updated": updated_el.text if updated_el is not None else "",
-                "is_short": False,
             })
         return videos
 
-    async def _classify_shorts(self, session: aiohttp.ClientSession, videos: list[dict]) -> list[dict]:
-        async def check(video: dict) -> dict:
-            url = YOUTUBE_SHORTS_URL.format(video_id=video["video_id"])
+    async def _filter_regular_videos(self, session: aiohttp.ClientSession, videos: list[dict]) -> list[dict]:
+        async def is_regular_video(video: dict) -> bool:
+            url = _YOUTUBE_SHORTS_URL.format(video_id=video["video_id"])
             try:
                 async with session.head(
                     url, allow_redirects=False, headers=_HEADERS,
                     timeout=aiohttp.ClientTimeout(total=5),
                 ) as resp:
-                    video["is_short"] = resp.status == 200
+                    return resp.status != 200
             except Exception:
-                video["is_short"] = False
-            return video
+                return True
 
-        return list(await asyncio.gather(*[check(v) for v in videos]))
+        checks = await asyncio.gather(*[is_regular_video(v) for v in videos])
+        return [video for video, is_regular in zip(videos, checks) if is_regular]
 
 
 # ---------------------------------------------------------------------------
@@ -266,10 +257,6 @@ class YouTubeLatestCoordinator(DataUpdateCoordinator):
             for channel_data in coordinator.data.values():
                 for video in channel_data.get("videos", []):
                     all_videos.append({**video, "channel_name": channel_data.get("channel_name", "")})
-                if channel_data.get("exclude_shorts"):
-                    continue
-                for short in channel_data.get("shorts", []):
-                    all_videos.append({**short, "channel_name": channel_data.get("channel_name", "")})
 
         all_videos.sort(key=lambda v: v.get("published", ""), reverse=True)
         self.last_update_success_time = utcnow()

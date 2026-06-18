@@ -13,10 +13,8 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import (
     CONF_CHANNELS,
     CONF_ENTRY_TYPE,
-    CONF_EXCLUDE_SHORTS,
     CONF_LATEST_COUNT,
     CONF_MAX_VIDEOS,
-    DEFAULT_EXCLUDE_SHORTS,
     DEFAULT_LATEST_COUNT,
     DEFAULT_MAX_VIDEOS,
     DOMAIN,
@@ -71,10 +69,6 @@ def _setup_channel_entry(
 ) -> None:
     channels: list[str] = entry.data.get(CONF_CHANNELS, [])
     max_videos: int = entry.options.get(CONF_MAX_VIDEOS, entry.data.get(CONF_MAX_VIDEOS, DEFAULT_MAX_VIDEOS))
-    exclude_shorts: bool = entry.options.get(
-        CONF_EXCLUDE_SHORTS,
-        entry.data.get(CONF_EXCLUDE_SHORTS, DEFAULT_EXCLUDE_SHORTS),
-    )
 
     entities: list[SensorEntity] = []
     for channel in channels:
@@ -86,10 +80,7 @@ def _setup_channel_entry(
         entities.append(ChannelInfoSensor(coordinator, channel, slug, "channel_id",     "channel_id",     "Channel ID",     "mdi:identifier"))
         entities.append(ChannelInfoSensor(coordinator, channel, slug, "rss_url",        "rss_url",        "RSS URL",        "mdi:rss"))
         for i in range(1, max_videos + 1):
-            entities.append(VideoSlotSensor(coordinator, channel, slug, i, is_short=False))
-        if not exclude_shorts:
-            for i in range(1, max_videos + 1):
-                entities.append(VideoSlotSensor(coordinator, channel, slug, i, is_short=True))
+            entities.append(VideoSlotSensor(coordinator, channel, slug, i))
 
     async_add_entities(entities)
 
@@ -207,12 +198,11 @@ class ChannelStatusSensor(CoordinatorEntity, SensorEntity):
             "channel_id": data.get("channel_id"),
             "channel_name": data.get("channel_name"),
             "video_count": len(data.get("videos", [])),
-            "short_count": len(data.get("shorts", [])),
         }
 
 
 class VideoSlotSensor(CoordinatorEntity, SensorEntity):
-    """One sensor per video/short slot."""
+    """One sensor per video slot."""
 
     def __init__(
         self,
@@ -220,14 +210,11 @@ class VideoSlotSensor(CoordinatorEntity, SensorEntity):
         channel: str,
         slug: str,
         position: int,
-        is_short: bool,
     ) -> None:
         super().__init__(coordinator)
         self._channel = channel
         self._position = position
-        self._is_short = is_short
-        kind = "short" if is_short else "video"
-        self._attr_unique_id = f"youtube_{slug}_{kind}_{position:02d}"
+        self._attr_unique_id = f"youtube_{slug}_video_{position:02d}"
         self._attr_icon = ICON
 
     @property
@@ -236,8 +223,7 @@ class VideoSlotSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def name(self) -> str:
-        kind = "Short" if self._is_short else "Video"
-        return f"YouTube {self._channel_name} {kind} {self._position:02d}"
+        return f"YouTube {self._channel_name} Video {self._position:02d}"
 
     @property
     def device_info(self) -> dict:
@@ -246,7 +232,7 @@ class VideoSlotSensor(CoordinatorEntity, SensorEntity):
     @property
     def _video(self) -> dict | None:
         data = self.coordinator.data.get(self._channel, {})
-        lst = data.get("shorts" if self._is_short else "videos", [])
+        lst = data.get("videos", [])
         idx = self._position - 1
         return lst[idx] if idx < len(lst) else None
 
@@ -365,5 +351,4 @@ class LatestVideoSensor(CoordinatorEntity, SensorEntity):
             "description": v.get("description"),
             "published": v.get("published"),
             "updated": v.get("updated"),
-            "is_short": v.get("is_short"),
         }

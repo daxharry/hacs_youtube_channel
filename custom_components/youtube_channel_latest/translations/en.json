@@ -13,8 +13,7 @@
         "description": "Enter the YouTube channels to monitor. Use the channel ID (e.g. `UCxxxxxx`) or the handle (e.g. `@MrBeast`). Separate multiple channels with a comma or a new line.",
         "data": {
           "channels": "Channels (IDs or @handles)",
-          "max_videos": "Number of latest videos to fetch (1-50)",
-          "exclude_shorts": "Exclude Shorts"
+          "max_videos": "Number of latest videos to fetch (1-50)"
         }
       },
       "latest": {
@@ -36,7 +35,6 @@
         "data": {
           "channels": "Channels (IDs or @handles)",
           "max_videos": "Number of latest videos to fetch (1-50)",
-          "exclude_shorts": "Exclude Shorts",
           "latest_count": "Number of videos to show (1-50)"
         }
       }
