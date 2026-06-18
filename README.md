@@ -64,12 +64,13 @@ Each Latest video sensor:
 
 ## Icons
 
-The repository includes the same YouTube artwork in both places needed by the ecosystem:
+The repository includes the YouTube artwork in the locations Home Assistant and HACS expect:
 
 | File | Used by |
 |---|---|
-| `icon.png` / `logo.png` | HACS repository listing |
-| `custom_components/youtube_channel_latest/icon.png` / `custom_components/youtube_channel_latest/logo.png` | Home Assistant custom integration page |
+| `custom_components/youtube_channel_latest/brand/icon.png` | HACS listing and Home Assistant integration page |
+| `custom_components/youtube_channel_latest/brand/logo.png` | Home Assistant integration page (logo) |
+| `custom_components/youtube_channel_latest/brand/icon@2x.png` | HiDPI displays |
 
 The integration entities also set their icon to `mdi:youtube` through the shared `ICON` constant in `const.py`.
 
